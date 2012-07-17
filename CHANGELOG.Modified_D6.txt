@@ -1,5 +1,9 @@
-[        ] mkalkbrenner: started Modified D6 at github
+md6-6.26.20, 2012-07-17
+-----------------------
+[        ] mkalkbrenner: started project Modified D6 at github
 [        ] mkalkbrenner: cleaned up cdc code, removed outdated drupalcenter stuff and prepared pressflow upstream
+[        ] mkalkbrenner: fixed xmlrpc server http and xml headers by adding encoding
+
 
 cdc-6.26.19, 2012-05-03
 -----------------------

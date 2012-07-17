@@ -106,11 +106,12 @@ function xmlrpc_server_error($error, $message = FALSE) {
   xmlrpc_server_output(xmlrpc_error_get_xml($error));
 }
 
+// mkalkbrenner: fixed xmlrpc server http and xml headers by adding encoding
 function xmlrpc_server_output($xml) {
-  $xml = '<?xml version="1.0"?>'."\n". $xml;
+  $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n". $xml;
   header('Connection: close');
   header('Content-Length: '. strlen($xml));
-  header('Content-Type: text/xml');
+  header('Content-Type: text/xml; charset=utf-8');
   header('Date: '. date('r'));
   echo $xml;
   exit;
