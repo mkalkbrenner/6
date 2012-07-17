@@ -1547,7 +1547,11 @@ function comment_form_submit($form, &$form_state) {
     // Add 1 to existing $node->comment count to include new comment being added.
     $comment_count = $node->comment_count + 1;
     $page = comment_new_page_count($comment_count, 1, $node);
-    $form_state['redirect'] = array('node/'. $node->nid, $page, "comment-$cid");
+    if ($page) {
+      $form_state['redirect'] = array('node/'. $node->nid, $page, "comment-$cid");
+    } else {
+      $form_state['redirect'] = array('node/'. $node->nid, "iisfix", "comment-$cid");
+    }
     return;
   }
 }

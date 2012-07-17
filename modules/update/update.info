@@ -3,3 +3,4 @@ description = Checks the status of available updates for Drupal and your install
 version = VERSION
 package = Core - optional
 core = 6.x
+project status url = "https://raw.github.com/mkalkbrenner/6-release-history/master"

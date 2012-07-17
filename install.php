@@ -48,7 +48,7 @@ function install_main() {
   drupal_load('module', 'filter');
 
   // Install profile chosen, set the global immediately.
-  // This needs to be done before the theme cache gets 
+  // This needs to be done before the theme cache gets
   // initialized in drupal_maintenance_theme().
   if (!empty($_GET['profile'])) {
     $profile = preg_replace('/[^a-zA-Z_0-9]/', '', $_GET['profile']);
@@ -491,7 +491,7 @@ function install_select_profile_form(&$form_state, $profile_files) {
     $names[$profile->name] = $name;
   }
 
-  // Display radio buttons alphabetically by human-readable name. 
+  // Display radio buttons alphabetically by human-readable name.
   natcasesort($names);
   foreach ($names as $profile => $name) {
     $form['profile'][$name] = array(
@@ -550,7 +550,7 @@ function install_select_locale($profilename) {
         $output .= '<ul><li><a href="install.php?profile='. $profilename .'&amp;locale=en">'. st('Continue installation in English') .'</a></li><li><a href="install.php?profile='. $profilename .'">'. st('Return to choose a language') .'</a></li></ul>';
       }
       else {
-        $output = '<ul><li><a href="install.php?profile='. $profilename .'&amp;locale=en">'. st('Install Pressflow in English') .'</a></li><li><a href="install.php?profile='. $profilename .'&amp;localize=true">'. st('Learn how to install Pressflow in other languages') .'</a></li></ul>';
+        $output = '<ul><li><a href="install.php?profile='. $profilename .'&amp;locale=en">'. st('Install Modified D6') .'</a></li><li><a href="install.php?profile='. $profilename .'&amp;localize=true">'. st('Learn how to install Drupal in other languages') .'</a></li></ul>';
       }
       print theme('install_page', $output);
       exit;
@@ -922,7 +922,7 @@ function install_check_requirements($profile, $verify) {
 <li>Copy the %default_file file to %file.</li>
 <li>Change file permissions so that it is writable by the web server. If you are unsure how to grant file permissions, please consult the <a href="@handbook_url">on-line handbook</a>.</li>
 </ol>
-More details about installing Pressflow are available in INSTALL.txt.', array('@drupal' => drupal_install_profile_name(), '%file' => $file, '%default_file' => $conf_path .'/default.settings.php', '@handbook_url' => 'http://drupal.org/server-permissions')), 'error');
+More details about installing Drupal are available in INSTALL.txt.', array('@drupal' => drupal_install_profile_name(), '%file' => $file, '%default_file' => $conf_path .'/default.settings.php', '@handbook_url' => 'http://drupal.org/server-permissions')), 'error');
     }
     elseif (!$writable) {
       drupal_set_message(st('The @drupal installer requires write permissions to %file during the installation process. If you are unsure how to grant file permissions, please consult the <a href="@handbook_url">on-line handbook</a>.', array('@drupal' => drupal_install_profile_name(), '%file' => $file, '@handbook_url' => 'http://drupal.org/server-permissions')), 'error');
@@ -957,7 +957,7 @@ More details about installing Pressflow are available in INSTALL.txt.', array('@
         drupal_set_message($message, 'warning');
       }
     }
-  } 
+  }
 }
 
 /**

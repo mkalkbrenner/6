@@ -111,6 +111,36 @@ $db_prefix = '';
  */
 # $db_collation = 'utf8_general_ci';
 
+/* Pressflow: define a slave database (setting up database replication first!)
+ */
+#$db_slave_url = 'mysql://username:password@replicant/databasename';
+
+/* Pressflow: define multiple slave databases (setting up database replication first!)
+ */
+#$db_slave_url[] = 'mysql://username:password@replicant1/databasename';
+#$db_slave_url[] = 'mysql://username:password@replicant2/databasename';
+
+/* extension for Pressflow:
+ * dont't show error page if connection to slave could not be established
+ * but use master database
+ */
+#$conf['db_replication_fallback_to_master'] = TRUE;
+
+/**
+ * extension for Pressflow:
+ * using a smart algorithm to route queries to slave database
+ * which allows contrib modules to benefit from replication
+ */
+#$conf['db_replication_smart_replicant_switch'] = TRUE;
+#$conf['db_replication_read_caches_from_slave'] = FALSE; // depends on db_replication_smart_replicant_switch
+#$conf['db_replication_keep_authenticated_users_on_master'] = FALSE; // depends on db_replication_smart_replicant_switch
+
+/**
+ * optional cache.inc using a lazy write strategy
+ */
+#$conf['cache_inc'] = './includes/cache_lazy_write.inc';
+
+
 /**
  * Access control for update.php script
  *
@@ -165,6 +195,13 @@ ini_set('session.use_cookies',      1);
 ini_set('session.use_only_cookies', 1);
 ini_set('session.use_trans_sid',    0);
 ini_set('url_rewriter.tags',        '');
+
+/**
+ * Some distributions, e.g. Debian and Ubuntu do not ship with PHP defaults
+ * that triggers PHP garbage collection, there is a need to also set the following
+ */
+# ini_set('session.gc_probability', 1);
+# ini_set('session.gc_divisor', 100);
 
 /**
  * If you encounter a situation where users post a large amount of text, and
@@ -269,3 +306,13 @@ ini_set('url_rewriter.tags',        '');
  * threshold has elapsed since installation.
  */
 # $conf['pressflow_smart_start'] = TRUE;
+
+
+/**
+ * configure error levels for drupal_error_handler()
+ *
+ * drupal core uses E_ALL ^ E_DEPRECATED ^ E_NOTICE
+ * pressflow uses E_ALL ^ E_DEPRECATED
+ * modified d6 core uses drupal core's filter as default but offers a variable to configure the filter
+ */
+# $conf['error_handler_errno_filter'] = E_ALL ^ E_DEPRECATED ^ E_NOTICE;

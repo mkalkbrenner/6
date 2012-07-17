@@ -98,7 +98,7 @@ function drupal_mail($module, $key, $to, $language, $params = array(), $from = N
     'MIME-Version'              => '1.0',
     'Content-Type'              => 'text/plain; charset=UTF-8; format=flowed; delsp=yes',
     'Content-Transfer-Encoding' => '8Bit',
-    'X-Mailer'                  => 'Pressflow'
+    'X-Mailer'                  => 'Drupal'
   );
   if ($default_from) {
     // To prevent e-mail from looking like spam, the addresses in the Sender and
@@ -180,6 +180,12 @@ function drupal_mail_send($message) {
     foreach ($message['headers'] as $name => $value) {
       $mimeheaders[] = $name .': '. mime_header_encode($value);
     }
+
+    // If no explicit Return-path set, use From header and add Return-Path.
+    $return_path = empty($message['headers']['Return-Path'])
+      ? $message['from']
+      : $message['headers']['Return-Path'];
+
     return mail(
       $message['to'],
       mime_header_encode($message['subject']),
@@ -188,7 +194,9 @@ function drupal_mail_send($message) {
       str_replace("\r", '', $message['body']),
       // For headers, PHP's API suggests that we use CRLF normally,
       // but some MTAs incorrecly replace LF with CRLF. See #234403.
-      join("\n", $mimeheaders)
+      join("\n", $mimeheaders),
+      // Adds the sendmail -f command.
+      '-f' . $return_path
     );
   }
 }

@@ -27,6 +27,7 @@ Disallow: /scripts/
 Disallow: /themes/
 # Files
 Disallow: /CHANGELOG.txt
+Disallow: /CHANGELOG.Modified_D6.txt
 Disallow: /cron.php
 Disallow: /INSTALL.mysql.txt
 Disallow: /INSTALL.pgsql.txt

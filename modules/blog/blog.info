@@ -3,3 +3,4 @@ description = Enables keeping easily and regularly updated user web pages or blo
 package = Core - optional
 version = VERSION
 core = 6.x
+

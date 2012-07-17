@@ -6,6 +6,11 @@
  */
 
 /**
+ * Indicates compatibility to Cocomore Drupal Core
+ */
+define('COCOMORE_DRUPAL_CORE', 1);
+
+/**
  * Indicates that the item should never be removed unless explicitly told to
  * using cache_clear_all() with a cache ID.
  */
@@ -383,7 +388,7 @@ function conf_init() {
   global $base_url, $base_path, $base_root;
 
   // Export the following settings.php variables to the global namespace
-  global $db_url, $db_slave_url, $db_prefix, $db_collation, $cookie_domain, $conf, $installed_profile, $update_free_access;
+  global $db_url, $db_slave_url, $db_collation, $db_prefix, $cookie_domain, $conf, $installed_profile, $update_free_access;
   $conf = array();
 
   if (!isset($_SERVER['SERVER_PROTOCOL']) || ($_SERVER['SERVER_PROTOCOL'] != 'HTTP/1.0' && $_SERVER['SERVER_PROTOCOL'] != 'HTTP/1.1')) {
@@ -427,6 +432,10 @@ function conf_init() {
     $base_root = substr($base_url, 0, strlen($base_url) - strlen($parts['path']));
   }
   else {
+    if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' == $_SERVER['HTTP_X_FORWARDED_PROTO']) {
+      $_SERVER['HTTPS'] = 'on';
+    }
+
     // Create base URL
     $base_root = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
 
@@ -580,8 +589,8 @@ function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 
       // Wait for another request that is already doing this work.
       lock_wait('variable_cache_regenerate');
 
-      // Run the function again. Try a limited number of times to avoid 
-      // infinite recursion if the database connection is invalid for  
+      // Run the function again. Try a limited number of times to avoid
+      // infinite recursion if the database connection is invalid for
       // some reason, e.g., mysqld restart, loss of network, etc.
       $recursion_depth++;
       if ($recursion_depth < 50) {
@@ -637,12 +646,19 @@ function variable_get($name, $default) {
  * @see variable_del(), variable_get()
  */
 function variable_set($name, $value) {
-  global $conf, $db_prefix;
+  global $conf, $db_prefix, $db_type;
 
+  // TODO use lazy mechanism
   $serialized_value = serialize($value);
-  db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
-  if (!db_affected_rows()) {
-    @db_query("INSERT INTO {variable} (name, value) VALUES ('%s', '%s')", $name, $serialized_value);
+  if (strpos($db_type, 'mysql') === 0) {
+    db_query("INSERT INTO {variable} (name, value) VALUES ('%s', '%s') ON DUPLICATE KEY UPDATE value = '%s'",
+      $name, $serialized_value, $serialized_value);
+  }
+  else {
+    db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
+    if (!db_affected_rows()) {
+      @db_query("INSERT INTO {variable} (name, value) VALUES ('%s', '%s')", $name, $serialized_value);
+    }
   }
 
   $conf[$name] = $value;
@@ -653,7 +669,7 @@ function variable_set($name, $value) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
+
   variable_cache_rebuild();
 }
 
@@ -682,7 +698,7 @@ function variable_del($name) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
+
   variable_cache_rebuild();
 }
 
@@ -805,7 +821,7 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   if (!isset($name)) {
     return $headers;
   }
-  
+
   // Support the Drupal 6 header API
   if (!isset($value)) {
     if (strpos($name, ':') !== FALSE) {
@@ -1246,6 +1262,21 @@ function request_uri() {
 function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NOTICE, $link = NULL) {
   global $user, $base_root;
 
+  $backtrace = array();
+
+  if ($severity <= variable_get('watchdog_log_backtrace', -1)) {
+    $debug_backtrace = debug_backtrace(FALSE);
+    array_shift($debug_backtrace);
+    foreach (array_reverse($debug_backtrace) as $num => $detail) {
+      $backtrace[] = t('%num: %function at line %line in %file', array(
+        '%num' => $num + 1,
+        '%function' => !empty($detail['function']) ? $detail['function'] : '?',
+        '%line' => !empty($detail['line']) ? $detail['line'] : '?',
+        '%file' => !empty($detail['file']) ? $detail['file'] : '?',
+      ));
+    }
+  }
+
   // Prepare the fields to be logged
   $log_message = array(
     'type'        => $type,
@@ -1258,7 +1289,10 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
     'referer'     => referer_uri(),
     'ip'          => ip_address(),
     'timestamp'   => time(),
-    );
+    'server_addr' => isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '127.0.0.1',
+    'server_name' => isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost',
+    'backtrace'   => $backtrace,
+  );
 
   // Call the logging hooks to log/process the message
   foreach (module_implements('watchdog') as $module) {
@@ -1423,7 +1457,7 @@ function drupal_bootstrap($phase = NULL) {
       _drupal_bootstrap($current_phase);
     }
   }
-  
+
   return $phase_index;
 }
 
@@ -1483,7 +1517,7 @@ function _drupal_bootstrap($phase) {
       // those using APC or memcached.
       require_once variable_get('lock_inc', './includes/lock.inc');
       lock_init();
-      
+
       // Detect if an installation is present.
       detect_installation_or_run_installer();
 
@@ -1534,11 +1568,11 @@ function _drupal_bootstrap($phase) {
         // We are done.
         exit;
       }
-  
+
       if (!$cache && drupal_page_is_cacheable() && $cache_mode != CACHE_EXTERNAL) {
         header('X-Drupal-Cache: MISS');
       }
-      
+
       // If using an external cache and the page is cacheable, set headers.
       if ($cache_mode == CACHE_EXTERNAL && drupal_page_is_cacheable()) {
         drupal_page_cache_header_external();
@@ -1679,17 +1713,17 @@ function ip_address() {
 
   if (!isset($ip_address)) {
     $ip_address = $_SERVER['REMOTE_ADDR'];
-    
+
     // Only use parts of the X-Forwarded-For (XFF) header that have followed a trusted route.
     // Specifically, identify the leftmost IP address in the XFF header that is not one of ours.
     // An XFF header is: X-Forwarded-For: client1, proxy1, proxy2
     if (isset($_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]) && variable_get('reverse_proxy', 0)) {
       // Load trusted reverse proxy server IPs.
       $reverse_proxy_addresses = variable_get('reverse_proxy_addresses', array());
-      
+
       // Turn XFF header into an array.
       $forwarded = explode(',', $_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]);
-      
+
       // Trim the forwarded IPs; they may have been delimited by commas and spaces.
       $forwarded = array_map('trim', $forwarded);
 
@@ -1698,7 +1732,7 @@ function ip_address() {
 
       // Eliminate all trusted IPs.
       $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
-      
+
       // The right-most IP is the most specific we can trust.
       $ip_address = array_pop($untrusted);
     }
@@ -1712,9 +1746,9 @@ function ip_address() {
  */
 function drupal_session_initialize() {
   global $user;
-   
+
   session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
- 
+
   if (isset($_COOKIE[session_name()])) {
     // If a session cookie exists, initialize the session. Otherwise the
     // session is only started on demand in drupal_session_commit(), making
@@ -1767,6 +1801,9 @@ function drupal_session_commit() {
   }
   else if (drupal_save_session()) {
     if (!drupal_session_started()) {
+      if (variable_get('performance_debug_session_starter', 0)) {
+        watchdog('Performance', 'Session started. Keys: %keys', array('%keys' => implode(', ', array_keys($_SESSION))), WATCHDOG_DEBUG);
+      }
       drupal_session_start();
     }
     // Write the session data.
@@ -1776,7 +1813,7 @@ function drupal_session_commit() {
 
 /**
  * Return whether a session has been started.
- */  
+ */
 function drupal_session_started($set = NULL) {
   static $session_started = FALSE;
   if (isset($set)) {
@@ -1841,7 +1878,7 @@ function drupal_save_session($status = NULL) {
   }
   return $save_session;
 }
-	
+
 /**
  * Returns the current bootstrap phase for this Drupal process.
  *
@@ -1886,7 +1923,7 @@ function drupal_generate_test_ua($prefix) {
     // check the HMAC before the database is initialized. filectime()
     // and fileinode() are not easily determined from remote.
 //    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
-    $filepath = './includes/bootstrap.inc';                
+    $filepath = './includes/bootstrap.inc';
 //    $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
     $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   }
@@ -1914,7 +1951,7 @@ function drupal_is_cli() {
  */
 function drupal_session_destroy() {
   session_destroy();
-  
+
   // Workaround PHP 5.2 fatal error "Failed to initialize storage module".
   // @see http://bugs.php.net/bug.php?id=32330
   session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');

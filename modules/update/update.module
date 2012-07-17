@@ -404,7 +404,7 @@ function update_refresh() {
 function update_mail($key, &$message, $params) {
   $language = $message['language'];
   $langcode = $language->language;
-  $message['subject'] .= t('New release(s) available for !site_name', array('!site_name' => variable_get('site_name', 'Pressflow')), $langcode);
+  $message['subject'] .= t('New release(s) available for !site_name', array('!site_name' => variable_get('site_name', 'Modified D6')), $langcode);
   foreach ($params as $msg_type => $msg_reason) {
     $message['body'][] = _update_message_text($msg_type, $msg_reason, FALSE, $language);
   }
@@ -544,15 +544,24 @@ function _update_project_status_sort($a, $b) {
  *     the given time, after which it will be invalidated.
  */
 function _update_cache_set($cid, $data, $expire) {
+  global $db_type;
+
   $serialized = 0;
   if (is_object($data) || is_array($data)) {
     $data = serialize($data);
     $serialized = 1;
   }
   $created = time();
-  db_query("UPDATE {cache_update} SET data = %b, created = %d, expire = %d, serialized = %d WHERE cid = '%s'", $data, $created, $expire, $serialized, $cid);
-  if (!db_affected_rows()) {
-    @db_query("INSERT INTO {cache_update} (cid, data, created, expire, serialized) VALUES ('%s', %b, %d, %d, %d)", $cid, $data, $created, $expire, $serialized);
+
+  if (strpos($db_type, 'mysql') === 0) {
+    db_query("INSERT INTO {cache_update} (cid, data, created, expire, serialized) VALUES ('%s', %b, %d, %d, %d) ON DUPLICATE KEY UPDATE data = %b, created = %d, expire = %d, serialized = %d",
+      $cid, $data, $created, $expire, $serialized, $data, $created, $expire, $serialized);
+  }
+  else {
+    db_query("UPDATE {cache_update} SET data = %b, created = %d, expire = %d, serialized = %d WHERE cid = '%s'", $data, $created, $expire, $serialized, $cid);
+    if (!db_affected_rows()) {
+      @db_query("INSERT INTO {cache_update} (cid, data, created, expire, serialized) VALUES ('%s', %b, %d, %d, %d)", $cid, $data, $created, $expire, $serialized);
+    }
   }
 }
 

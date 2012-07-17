@@ -53,7 +53,7 @@ function db_version() {
  *
  * Note that mysqli does not support persistent connections.
  */
-function db_connect($url) {
+function db_connect($url, $fallback_to_master = FALSE) {
   // Check if MySQLi support is present in PHP
   if (!function_exists('mysqli_init') && !extension_loaded('mysqli')) {
     _db_error_page('Unable to use the MySQLi database because the MySQLi extension for PHP is not installed. Check your <code>php.ini</code> to see how you can enable it.');
@@ -75,6 +75,9 @@ function db_connect($url) {
   @mysqli_real_connect($connection, $url['host'], $url['user'], $url['pass'], substr($url['path'], 1), $url['port'], NULL, MYSQLI_CLIENT_FOUND_ROWS);
 
   if (mysqli_connect_errno() > 0) {
+    if ($fallback_to_master) {
+      return FALSE;
+    }
     _db_error_page(mysqli_connect_error());
   }
 
@@ -134,7 +137,7 @@ function _db_query($query, $debug = 0, $slave = FALSE) {
   }
 
   $sent_to_slave = FALSE;
-  if (isset($active_slave_db) && $slave) {
+  if (db_smart_replicant_switch($query, $slave)) {
     $result = mysqli_query($active_slave_db, $query);
     $sent_to_slave = TRUE;
   }
@@ -157,13 +160,26 @@ function _db_query($query, $debug = 0, $slave = FALSE) {
   }
 
   if ($debug) {
-    print '<p>query: '. $query .'<br />error:'. mysqli_error($active_db) .'</p>';
+    print '<p>';
+    print $sent_to_slave ? 'Slave' : 'Master';
+    print '<br />query: '. $query .'<br />error:'. mysqli_error($active_last_db) .'</p>';
   }
 
-  if (!mysqli_errno($active_last_db)) {
+  $errno = mysqli_errno($active_last_db);
+
+  if (!$errno) {
     return $result;
   }
   else {
+    switch ($errno) {
+      case 1153: //Got a packet bigger than "max_allowed_packet" bytes
+        // If the MySQL Server rejected the query because it's too big,
+        // writing the query to database watchdog will fail as well
+        // Truncate the query ...
+        $query = substr($query, 0, 100);
+        break;
+    }
+
     // Indicate to drupal_error_handler that this is a database error.
     ${DB_ERROR} = TRUE;
     trigger_error(check_plain(mysqli_error($active_last_db) ."\nquery: ". $query), E_USER_WARNING);
@@ -408,20 +424,6 @@ function db_decode_blob($data) {
 function db_escape_string($text) {
   global $active_db;
   return mysqli_real_escape_string($active_db, $text);
-}
-
-/**
- * Lock a table.
- */
-function db_lock_table($table) {
-  db_query('LOCK TABLES {'. db_escape_table($table) .'} WRITE');
-}
-
-/**
- * Unlock all locked tables.
- */
-function db_unlock_tables() {
-  db_query('UNLOCK TABLES');
 }
 
 /**

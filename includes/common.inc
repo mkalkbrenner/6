@@ -357,7 +357,7 @@ function drupal_site_offline() {
   drupal_set_header($_SERVER['SERVER_PROTOCOL'] .' 503 Service unavailable');
   drupal_set_title(t('Site off-line'));
   print theme('maintenance_page', filter_xss_admin(variable_get('site_offline_message',
-    t('@site is currently under maintenance. We should be back shortly. Thank you for your patience.', array('@site' => variable_get('site_name', 'Pressflow'))))));
+    t('@site is currently under maintenance. We should be back shortly. Thank you for your patience.', array('@site' => variable_get('site_name', 'Modified D6'))))));
 }
 
 /**
@@ -550,27 +550,11 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
 
   $result->request = $request;
 
-  // Calculate how much time is left of the original timeout value.
-  $time_left = $timeout - timer_read(__FUNCTION__) / 1000;
-  if ($time_left > 0) {
-    stream_set_timeout($fp, floor($time_left), floor(1000000 * fmod($time_left, 1)));
-    fwrite($fp, $request);
-  }
+  fwrite($fp, $request);
 
   // Fetch response.
-  $response = '';
-  while (!feof($fp)) {
-    // Calculate how much time is left of the original timeout value.
-    $time_left = $timeout - timer_read(__FUNCTION__) / 1000;
-    if ($time_left <= 0) {
-      $result->code = HTTP_REQUEST_TIMEOUT;
-      $result->error = 'request timed out';
-      return $result;
-    }
-    stream_set_timeout($fp, floor($time_left), floor(1000000 * fmod($time_left, 1)));
-    $chunk = fread($fp, 1024);
-    $response .= $chunk;
-  }
+  $response = stream_get_contents($fp);
+
   fclose($fp);
 
   // Parse response headers from the response body.
@@ -656,7 +640,10 @@ function drupal_error_handler($errno, $message, $filename, $line, $context) {
     return;
   }
 
-  if ($errno & (E_ALL ^ E_DEPRECATED ^ E_NOTICE)) {
+  // drupal core uses E_ALL ^ E_DEPRECATED ^ E_NOTICE
+  // pressflow uses E_ALL ^ E_DEPRECATED
+  // modified d6 uses drupal core's filter as default but offers a variable to configure the filter
+  if ($errno & variable_get('error_handler_errno_filter', E_ALL ^ E_DEPRECATED ^ E_NOTICE)) {
     $types = array(1 => 'error', 2 => 'warning', 4 => 'parse error', 8 => 'notice', 16 => 'core error', 32 => 'core warning', 64 => 'compile error', 128 => 'compile warning', 256 => 'user error', 512 => 'user warning', 1024 => 'user notice', 2048 => 'strict warning', 4096 => 'recoverable fatal error');
 
     // For database errors, we want the line number/file name of the place that
@@ -944,7 +931,7 @@ function t($string, $args = array(), $langcode = NULL) {
     $string = $custom_strings[$langcode][$string];
   }
   // Translate with locale module if enabled.
-  elseif (function_exists('locale') && $langcode != 'en') {
+  elseif ($langcode != 'en' && function_exists('locale')) {
     $string = locale($string, $langcode);
   }
   if (empty($args)) {
@@ -1655,6 +1642,9 @@ function drupal_page_footer() {
     page_set_cache();
   }
 
+  // mkalkbrenner: send content to browser now
+  flush();
+
   module_invoke_all('exit');
 }
 
@@ -2221,6 +2211,15 @@ function drupal_add_js($data = NULL, $type = 'module', $scope = 'header', $defer
         ),
         'inline' => array(),
       );
+
+      // We never cache authenticated user pages, so if they are logged in we
+      // allow setting of the has_js cookie so batch API functions use the JS
+      // version.
+      // During Installation, function user_is_anonymous() is not available.
+      // In this case we enable java script for batch jobs for installation.
+      if (!function_exists('user_is_anonymous') || !user_is_anonymous()) {
+        $javascript['header']['core']['misc/jsenabled.js'] = array('cache' => TRUE, 'defer' => FALSE, 'preprocess' => TRUE);
+      }
     }
 
     if (isset($scope) && !isset($javascript[$scope])) {
@@ -2711,13 +2710,35 @@ function _drupal_bootstrap_full() {
  * @see drupal_page_header
  */
 function page_set_cache() {
-  global $base_root;
+  global $user, $base_root;
 
   if (drupal_page_is_cacheable()) {
     // This will fail in some cases, see page_get_cache() for the explanation.
     if ($data = ob_get_contents()) {
       ob_end_clean();
-      $cache_lifetime = variable_get('page_cache_lifetime', 0);
+
+      // Restore preferred header names based on the lower-case names returned
+      // by drupal_get_header().
+      $headers = array();
+      $header_names = _drupal_set_preferred_header_name();
+      foreach (drupal_get_header() as $name_lower => $value) {
+        $headers[$header_names[$name_lower]] = $value;
+        if (':status' == $name_lower) {
+          if (strpos($value, '200') !== 0) {
+            // we something like "404 Page Not Found" or "503 Service Unavailable"
+            // do not cache the page!
+            print $data;
+            return;
+          }
+        }
+      }
+
+      $cache_lifetime = variable_get('cache_lifetime', 0);
+      $page_cache_max_age = variable_get('page_cache_max_age', 0);
+
+      if ($page_cache_max_age > 0 && $page_cache_max_age < $cache_lifetime) {
+        $cache_lifetime = $page_cache_max_age;
+      }
 
       if (variable_get('page_compression', TRUE) && extension_loaded('zlib')) {
         $data = gzencode($data, 9, FORCE_GZIP);
@@ -2726,17 +2747,11 @@ function page_set_cache() {
       $cache = (object) array(
         'cid' => $base_root . request_uri(),
         'data' => $data,
-        'expire' => $cache_lifetime > 0 ? $cache_lifetime : CACHE_TEMPORARY,
+        'expire' => $cache_lifetime > 0 ? ($_SERVER['REQUEST_TIME'] + $cache_lifetime) : CACHE_TEMPORARY,
         'created' => $_SERVER['REQUEST_TIME'],
-        'headers' => array(),
+        'headers' => $headers,
       );
-    
-      // Restore preferred header names based on the lower-case names returned
-      // by drupal_get_header().
-      $header_names = _drupal_set_preferred_header_name();
-      foreach (drupal_get_header() as $name_lower => $value) {
-        $cache->headers[$header_names[$name_lower]] = $value;
-      }
+
       cache_set($cache->cid, $cache->data, 'cache_page', $cache->expire, serialize($cache->headers));
       drupal_page_cache_header($cache);
     }
@@ -3498,7 +3513,13 @@ function drupal_write_record($table, &$object, $update = array()) {
     $update = array($update);
   }
 
+  // mkalkbrenner: drupal_get_schema() needs to access the cache on the default database.
+  //           now it's possible to run drupal_write_record() for different connections
+  $db = db_set_active();
   $schema = drupal_get_schema($table);
+  if ($db) {
+    db_set_active($db);
+  }
   if (empty($schema)) {
     return FALSE;
   }

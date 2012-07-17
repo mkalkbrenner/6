@@ -34,7 +34,7 @@ function drupal_load_updates() {
  * @param $module
  *   A module name.
  * @return
- *   If the module has updates, an array of available updates sorted by version. 
+ *   If the module has updates, an array of available updates sorted by version.
  *   Otherwise, FALSE.
  */
 function drupal_get_schema_versions($module) {
@@ -114,7 +114,7 @@ function drupal_install_profile_name() {
     if (function_exists($function)) {
       $details = $function();
     }
-    $name = isset($details['name']) ? $details['name'] : 'Pressflow';
+    $name = isset($details['name']) ? $details['name'] : 'Modified D6';
   }
 
   return $name;

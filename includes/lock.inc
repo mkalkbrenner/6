@@ -206,6 +206,10 @@ function lock_wait($name, $delay = 30) {
 function lock_release($name) {
   global $locks;
 
+  if (function_exists('cache_lazy_write')) {
+    cache_lazy_write();
+  }
+
   unset($locks[$name]);
   db_query("DELETE FROM {semaphore} WHERE name = '%s' AND value = '%s'", $name, _lock_id());
 }
@@ -215,6 +219,10 @@ function lock_release($name) {
  */
 function lock_release_all($lock_id = NULL) {
   global $locks;
+
+  if (function_exists('cache_lazy_write')) {
+    cache_lazy_write();
+  }
 
   $locks = array();
   if (empty($lock_id)) {

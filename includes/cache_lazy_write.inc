@@ -1,4 +1,5 @@
 <?php
+// $Id: cache.inc,v 1.17.2.4 2009/12/16 17:30:00 goba Exp $
 
 /**
  * Return data from the persistent cache. Data may be stored as either plain text or as serialized data.
@@ -9,11 +10,14 @@
  * @param $table
  *   The table $table to store the data in. Valid core values are 'cache_filter',
  *   'cache_menu', 'cache_page', or 'cache' for the default cache.
- *
- *   @see cache_set()
  */
 function cache_get($cid, $table = 'cache') {
   global $user;
+
+  // mkalkbrenner: check temporary cache first
+  if ($cache = cache_temporary($cid, $table)) {
+    return $cache;
+  }
 
   // mkalkbrenner: let cron do such an expensive job
   if (!variable_get('cache_flush_cron', 1)) {
@@ -44,7 +48,7 @@ function cache_get($cid, $table = 'cache') {
     // sess_read() in session.inc.
     else {
       // mkalkbrenner: don't deliver expired cache entries
-      if ((isset($user->cache) && $user->cache > $cache->created) || (CACHE_TEMPORARY != $cache->expire && time() > $cache->expire)) {
+      if ($user->cache > $cache->created || (CACHE_TEMPORARY != $cache->expire && time() > $cache->expire)) {
         // This cache data is too old and thus not valid for us, ignore it.
         return 0;
       }
@@ -104,29 +108,74 @@ function cache_get($cid, $table = 'cache') {
  *     the given time, after which it behaves like CACHE_TEMPORARY.
  * @param $headers
  *   A string containing HTTP header information for cached pages.
- *
- *   @see cache_get()
  */
 function cache_set($cid, $data, $table = 'cache', $expire = CACHE_PERMANENT, $headers = NULL) {
+  static $first_call = TRUE;
+
+  if ($first_call) {
+    $first_call = FALSE;
+    register_shutdown_function('cache_lazy_write');
+  }
+
+  cache_temporary($cid, $table, array('created' => time(), 'data' => $data, 'expire' => $expire, 'headers' => $headers, 'serialized' => (is_object($data) || is_array($data)) ? 1 : 0));
+}
+
+
+function cache_temporary($cid = NULL, $table = NULL, $cache_data = NULL) {
+  static $cached = array();
+
+  if ($cid && $table) {
+    if (is_null($cache_data)) {
+      if (!empty($cached[$table][$cid])) {
+        $cache_hit = $cached[$table][$cid];
+        if ($cache_hit['serialized']) {
+          $cache_hit['data'] = unserialize($cache_hit['data']);
+        }
+        return (object) $cache_hit;
+      }
+
+      return 0;
+    }
+    elseif (is_array($cache_data)) {
+      if ($cache_data['serialized']) {
+        // temporary cache already needs to serialize here to remove object references that might be nested in an array (for example the menu tree).
+        // otherwise the data could be manipultated somewhere in the code before it gets written to database by cache_lazy_write().
+        $cache_data['data'] = serialize($cache_data['data']);
+      }
+      $cached[$table][$cid] = $cache_data;
+    }
+  }
+  elseif ('flush' == $cache_data) {
+    $cached = array();
+  }
+  elseif ('getall' == $cache_data) {
+    return $cached;
+  }
+}
+
+
+function cache_lazy_write() {
   global $db_type;
 
-  $serialized = 0;
-  if (is_object($data) || is_array($data)) {
-    $data = serialize($data);
-    $serialized = 1;
-  }
-  $created = time();
-  if (strpos($db_type, 'mysql') === 0) {
-    db_query("INSERT INTO {". $table ."} (cid, data, created, expire, headers, serialized) VALUES ('%s', %b, %d, %d, '%s', %d) ON DUPLICATE KEY UPDATE data = %b, created = %d, expire = %d, headers = '%s', serialized = %d",
-      $cid, $data, $created, $expire, $headers, $serialized, $data, $created, $expire, $headers, $serialized);
-  }
-  else {
-    db_query("UPDATE {". $table ."} SET data = %b, created = %d, expire = %d, headers = '%s', serialized = %d WHERE cid = '%s'", $data, $created, $expire, $headers, $serialized, $cid);
-    if (!db_affected_rows()) {
-      @db_query("INSERT INTO {". $table ."} (cid, data, created, expire, headers, serialized) VALUES ('%s', %b, %d, %d, '%s', %d)", $cid, $data, $created, $expire, $headers, $serialized);
+  $cached = cache_temporary(NULL, NULL, 'getall');
+  cache_temporary(NULL, NULL, 'flush');
+
+  foreach ($cached as $table => $rows) {
+    foreach ($rows as $cid => $cache) {
+      if (strpos($db_type, 'mysql') === 0) {
+        db_query("INSERT INTO {". $table ."} (cid, data, created, expire, headers, serialized) VALUES ('%s', %b, %d, %d, '%s', %d) ON DUPLICATE KEY UPDATE data = %b, created = %d, expire = %d, headers = '%s', serialized = %d",
+          $cid, $cache['data'], $cache['created'], $cache['expire'], $cache['headers'], $cache['serialized'], $cache['data'], $cache['created'], $cache['expire'], $cache['headers'], $cache['serialized']);
+      }
+      else {
+        db_query("UPDATE {". $table ."} SET data = %b, created = %d, expire = %d, headers = '%s', serialized = %d WHERE cid = '%s'", $cache['data'], $cache['created'], $cache['expire'], $cache['headers'], $cache['serialized'], $cid);
+        if (!db_affected_rows()) {
+          @db_query("INSERT INTO {". $table ."} (cid, data, created, expire, headers, serialized) VALUES ('%s', %b, %d, %d, '%s', %d)", $cid, $cache['data'], $cache['created'], $cache['expire'], $cache['headers'], $cache['serialized']);
+        }
+      }
     }
   }
 }
+
 
 /**
  *
@@ -163,6 +212,11 @@ function cache_clear_all($cid = NULL, $table = NULL, $wildcard = FALSE) {
     }
     return;
   }
+
+  // write in memory caches to database now.
+  // otherwise there might be pending cache entries which should be removed now
+  // but get written to database at the end of the request.
+  cache_lazy_write();
 
   if (empty($cid)) {
     if (variable_get('cache_lifetime', 0)) {

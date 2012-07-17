@@ -36,3 +36,10 @@ elseif (isset($return)) {
 }
 
 drupal_page_footer();
+$memory_threshold = variable_get('performance_debug_memory_threshold', 0);
+if ($memory_threshold) {
+  $peak = memory_get_peak_usage(TRUE) / 1024 / 1024;
+  if ($peak > $memory_threshold) {
+    watchdog('Performance', 'Memory threshold exceeded. Peak usage %peak MB.', array('%peak' => $peak), WATCHDOG_DEBUG);
+  }
+}

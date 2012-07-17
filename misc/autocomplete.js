@@ -155,6 +155,7 @@ Drupal.jsAC.prototype.hidePopup = function (keycode) {
   // Select item if the right key or mousebutton was pressed
   if (this.selected && ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
     this.input.value = this.selected.autocompleteValue;
+    $(this.input).trigger('autocomplete_select', [this.selected]);
   }
   // Hide popup
   var popup = this.popup;

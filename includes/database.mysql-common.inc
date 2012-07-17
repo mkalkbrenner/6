@@ -90,6 +90,11 @@ function db_create_table_sql($name, $table) {
 
   $sql .= $table['mysql_suffix'];
 
+  // mkalkbrenner: use InnoDB as engine. If it's not available MySQL falls back to MyISAM.
+  if (stripos($table['mysql_suffix'], 'ENGINE') === FALSE) {
+    $sql .= ' ENGINE=InnoDB';
+  }
+
   return array($sql);
 }
 
@@ -539,4 +544,52 @@ function db_change_field(&$ret, $table, $field, $field_new, $spec, $keys_new = a
  */
 function db_last_insert_id($table, $field) {
   return db_result(db_query('SELECT LAST_INSERT_ID()'));
+}
+
+/**
+ * Lock a table.
+ *
+ * @param $table
+ *   The name of the table you want to lock.
+ */
+function db_lock_table($table) {
+  _db_lock_table_status($table);
+  return db_query('LOCK TABLES {'. db_escape_table($table) .'} WRITE');
+}
+
+/**
+ * Lock tables.
+ *
+ * @param $table
+ *   Array of tables you want to lock.
+ */
+function db_lock_tables($tables) {
+  _db_lock_table_status(implode(', ', $tables));
+  array_walk($tables, 'db_escape_table');
+  return db_query('LOCK TABLES {'. implode('} WRITE, {', $tables) .'} WRITE');
+}
+
+/**
+ * Unlock all locked tables.
+ */
+function db_unlock_tables() {
+  _db_lock_table_status();
+  return db_query('UNLOCK TABLES');
+}
+
+/**
+ * Lock a table.
+ *
+ * @param $table
+ *   The name of the table you want to lock.
+ */
+function _db_lock_table_status($tables = '') {
+  static $previous_tables = '';
+
+  if (!empty($tables) && !empty($previous_tables)) {
+    trigger_error('You implicitly unlocked some tables ('.$previous_tables.
+      ') by requesting new locks on these tables: '.$tables , E_USER_WARNING);
+  }
+
+  $previous_tables = $tables;
 }

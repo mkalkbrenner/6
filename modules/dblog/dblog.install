@@ -91,6 +91,27 @@ function dblog_schema() {
         'default' => 0,
         'description' => 'Unix timestamp of when event occurred.',
       ),
+      'server_addr' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'IP address of the server who triggered the event.',
+      ),
+      'server_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Name of the server who triggered the event.',
+      ),
+      'backtrace' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'default' => '',
+        'size' => 'big',
+        'description' => 'Stack Trace.',
+      ),
     ),
     'primary key' => array('wid'),
     'indexes' => array('type' => array('type')),
@@ -110,6 +131,25 @@ function dblog_schema() {
 function dblog_update_6000() {
   $ret = array();
   db_change_field($ret, 'watchdog', 'referer', 'referer', array('type' => 'text', 'not null' => FALSE));
+  return $ret;
+}
+
+/**
+ * Add new fields server_addr and server_name.
+ */
+function dblog_update_6001() {
+  $ret = array();
+  db_add_field($ret, 'watchdog', 'server_addr', array('type' => 'varchar', 'length' => 128, 'not null' => TRUE, 'default' => '', 'description' => 'IP address of the server who triggered the event.', 'initial' => ''));
+  db_add_field($ret, 'watchdog', 'server_name', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => '', 'description' => 'Name of the server who triggered the event.', 'initial' => ''));
+  return $ret;
+}
+
+/**
+ * Add new field backtrace.
+ */
+function dblog_update_6002() {
+  $ret = array();
+  db_add_field($ret, 'watchdog', 'backtrace', array('type' => 'text', 'not null' => TRUE, 'default' => '', 'size' => 'big', 'description' => 'Stack Trace.', 'initial' => ''));
   return $ret;
 }
 

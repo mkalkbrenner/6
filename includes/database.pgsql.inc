@@ -43,7 +43,7 @@ function db_version() {
 /**
  * Initialize a database connection.
  */
-function db_connect($url) {
+function db_connect($url, $fallback_to_master = FALSE) {
   // Check if PostgreSQL support is present in PHP
   if (!function_exists('pg_connect')) {
     _db_error_page('Unable to use the PostgreSQL database because the PostgreSQL extension for PHP is not installed. Check your <code>php.ini</code> to see how you can enable it.');
@@ -77,6 +77,9 @@ function db_connect($url) {
 
   $connection = @pg_connect($conn_string);
   if (!$connection) {
+    if ($fallback_to_master) {
+      return FALSE;
+    }
     require_once './includes/unicode.inc';
     _db_error_page(decode_entities($php_errormsg));
   }
@@ -136,7 +139,7 @@ function _db_query($query, $debug = 0, $slave = FALSE) {
   }
 
   $sent_to_slave = FALSE;
-  if (isset($active_slave_db) && $slave) {
+  if (db_smart_replicant_switch($query, $slave)) {
     $last_result = pg_query($active_slave_db, $query);
     $sent_to_slave = TRUE;
   }
@@ -160,7 +163,9 @@ function _db_query($query, $debug = 0, $slave = FALSE) {
   }
 
   if ($debug) {
-    print '<p>query: '. $query .'<br />error:'. pg_last_error($active_last_db) .'</p>';
+    print '<p>';
+    print $sent_to_slave ? 'Slave' : 'Master';
+    print '<br />query: '. $query .'<br />error:'. pg_last_error($active_last_db) .'</p>';
   }
 
   if ($last_result !== FALSE) {
@@ -428,6 +433,17 @@ function db_escape_string($text) {
  */
 function db_lock_table($table) {
   db_query('BEGIN; LOCK TABLE {'. db_escape_table($table) .'} IN EXCLUSIVE MODE');
+}
+
+/**
+ * Lock tables.
+ *
+ * @param $table
+ *   Array of tables you want to lock.
+ */
+function db_lock_tables($tables) {
+  // TODO
+  // To be implemented by someone with better knowlegde of pgsql
 }
 
 /**

@@ -123,14 +123,21 @@ function db_prefix_tables($sql) {
  */
 function db_set_active($name = 'default') {
   global $db_url, $db_slave_url, $db_type, $active_db, $active_slave_db;
-  static $db_conns, $db_slave_conns, $active_name = FALSE;
+  static $db_conns, $db_slave_conns, $db_types, $active_name = FALSE;
 
   if (empty($db_url)) {
     include_once 'includes/install.inc';
     install_goto('install.php');
   }
 
-  if (!isset($db_conns[$name])) {
+  $real_name = $name;
+  // open a dedicated connection for watchdog entries
+  // to ensure that entries are written even if other tables locked
+  if ('dedicated_watchdog_connection' == $name) {
+    $name = 'default';
+  }
+
+  if (!isset($db_conns[$real_name])) {
     // Initiate a new connection, using the named DB URL specified.
     if (is_array($db_url)) {
       $connect_url = array_key_exists($name, $db_url) ? $db_url[$name] : $db_url['default'];
@@ -139,7 +146,7 @@ function db_set_active($name = 'default') {
         $slave_connect_url = $db_slave_url[$name][$slave_index];
       }
       else {
-        $slave_connect_url = $db_slave_url[$name];        
+        $slave_connect_url = $db_slave_url[$name];
       }
     }
     else {
@@ -149,7 +156,7 @@ function db_set_active($name = 'default') {
         $slave_connect_url = $db_slave_url[$slave_index];
       }
       else {
-        $slave_connect_url = $db_slave_url;        
+        $slave_connect_url = $db_slave_url;
       }
     }
 
@@ -163,18 +170,24 @@ function db_set_active($name = 'default') {
       _db_error_page("The database type '". $db_type ."' is unsupported. Please use either 'mysql' or 'mysqli' for MySQL, or 'pgsql' for PostgreSQL databases.");
     }
 
-    $db_conns[$name] = db_connect($connect_url);
+    $db_types[$real_name] = $db_type;
+
+    $db_conns[$real_name] = db_connect($connect_url);
     if (!empty($slave_connect_url)) {
-      $db_slave_conns[$name] = db_connect($slave_connect_url); 
+      // REVIEW fallback to another slave if available
+      if ($slave_conn = db_connect($slave_connect_url, variable_get('db_fallback_to_master', FALSE))) {
+        $db_slave_conns[$real_name] = $slave_conn;
+      }
     }
   }
 
   $previous_name = $active_name;
   // Set the active connection.
-  $active_name = $name;
-  $active_db = $db_conns[$name];
-  if (isset($db_slave_conns[$name])) {
-    $active_slave_db = $db_slave_conns[$name];
+  $active_name = $real_name;
+  $db_type = $db_types[$real_name];
+  $active_db = $db_conns[$real_name];
+  if (isset($db_slave_conns[$real_name])) {
+    $active_slave_db = $db_slave_conns[$real_name];
   }
   else {
     unset($active_slave_db);
@@ -696,8 +709,44 @@ function db_ignore_slave() {
     // the old data.
     $duration = variable_get('maximum_replication_lag', 300);
     // Set session variable with amount of time to delay before using slave.
-    // This will stick around for 5 minutes by default. 
+    // This will stick around for 5 minutes by default.
     // There is another $_Session variable 'not_slavesafe' for single queries.
     $_SESSION['ignore_slave_server'] = $_SERVER['REQUEST_TIME'] + $duration;
   }
+}
+
+
+function db_smart_replicant_switch($query, $slave) {
+  static $stay_at_master = FALSE;
+  global $user, $active_slave_db;
+
+  if (variable_get('db_replication_smart_replicant_switch', FALSE)) {
+    // admin should never use replicant database but anonymous users in general. authenticated users are configurable
+    if (!$stay_at_master && is_object($user) && 1 != $user->uid && (0 == $user->uid || !variable_get('db_replication_keep_authenticated_users_on_master', TRUE))) {
+      // with some exceptions
+      if (stripos($query, 'sessions') === FALSE /* avoid replication drift for session data */
+          && stripos($query, 'semaphore') === FALSE /* avoid replication drift for semaphore data */
+          && stripos($query, 'SELECT') === 0 /* only read access to replicant */
+          && stripos($query, 'LOCK') === FALSE /* send SELECT ... LOCK IN SHARE MODE to master */
+          && stripos($query, 'UPDATE') === FALSE /* send SELECT ... FOR UPDATE to master */
+          && stripos($query, 'LAST_INSERT_ID') === FALSE /* send SELECT LAST_INSERT_ID() to master */
+          && (variable_get('db_replication_read_caches_from_slave', FALSE) || (!variable_get('db_replication_read_caches_from_slave', FALSE) && stripos($query, 'cache') === FALSE))  /* avoid replication drift for cached data (configurable) */
+      ) {
+        return TRUE;
+      }
+      else if (preg_match("/\bLOCK\b/i", $query) /* LOCK TABLE ... and SELECT ... LOCK IN SHARE MODE */
+          || preg_match("/\bFOR\s+UPDATE\b/i", $query) /* SELECT ... FOR UPDATE */
+          || stripos($query, 'BEGIN') === 0 /* stay on master for transactions */
+          || stripos($query, 'START') === 0 /* stay on master for transactions */
+      ) {
+        // stay at master for next queries
+        $stay_at_master = TRUE;
+      }
+    }
+  }
+  else if (isset($active_slave_db) && $slave) {
+    return TRUE;
+  }
+
+  return FALSE;
 }

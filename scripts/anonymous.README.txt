@@ -1,0 +1,15 @@
+Anonymisierungsskript für Drupal 6
+
+Die Tabellen folgender Module werden anonymisiert:
+webform
+simplenews
+comment
+storm
+privatemsg
+profile
+user
+forward
+
+Aufruf durch:
+
+drush -r ../htdocs --include=../scripts anonymous

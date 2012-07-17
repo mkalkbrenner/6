@@ -20,6 +20,14 @@ function dblog_admin_settings() {
     '#description' => t('The maximum number of rows to keep in the database log. Older entries will be automatically discarded. (Requires a correctly configured <a href="@cron">cron maintenance task</a>.)', array('@cron' => url('admin/reports/status')))
   );
 
+  $form['dblog_overview_char_limit'] = array(
+    '#type' => 'select',
+    '#title' => t('Truncate message in overview'),
+    '#default_value' => variable_get('dblog_overview_char_limit', 56),
+    '#options' => drupal_map_assoc(array(56, 112, 224)),
+    '#description' => t('Truncate the message after configurable number of characters in the overview page.'),
+  );
+
   return system_settings_form($form);
 }
 
@@ -58,10 +66,11 @@ function dblog_overview() {
     array('data' => t('Date'), 'field' => 'w.wid', 'sort' => 'desc'),
     t('Message'),
     array('data' => t('User'), 'field' => 'u.name'),
+    array('data' => t('Server')),
     array('data' => t('Operations')),
   );
 
-  $sql = "SELECT w.wid, w.uid, w.severity, w.type, w.timestamp, w.message, w.variables, w.link, u.name FROM {watchdog} w INNER JOIN {users} u ON w.uid = u.uid";
+  $sql = "SELECT w.wid, w.uid, w.severity, w.type, w.timestamp, w.message, w.variables, w.link, w.server_addr, w.server_name, u.name FROM {watchdog} w INNER JOIN {users} u ON w.uid = u.uid";
   $tablesort = tablesort_sql($header);
   if (!empty($filter['where'])) {
     $result = pager_query($sql ." WHERE ". $filter['where'] . $tablesort, 50, 0, NULL, $filter['args']);
@@ -77,8 +86,9 @@ function dblog_overview() {
         $icons[$dblog->severity],
         t($dblog->type),
         format_date($dblog->timestamp, 'small'),
-        l(truncate_utf8(_dblog_format_message($dblog), 56, TRUE, TRUE), 'admin/reports/event/'. $dblog->wid, array('html' => TRUE)),
+        l(truncate_utf8(_dblog_format_message($dblog), variable_get('dblog_overview_char_limit', 56), TRUE, TRUE), 'admin/reports/event/'. $dblog->wid, array('html' => TRUE)),
         theme('username', $dblog),
+        $dblog->server_addr . ' (' . $dblog->server_name. ')',
         filter_xss($dblog->link),
       ),
       // Attributes for tr
@@ -168,6 +178,18 @@ function dblog_event($id) {
       array(
         array('data' => t('Operations'), 'header' => TRUE),
         $dblog->link,
+      ),
+      array(
+        array('data' => t('Server IP'), 'header' => TRUE),
+        $dblog->server_addr,
+      ),
+      array(
+        array('data' => t('Server Name'), 'header' => TRUE),
+        $dblog->server_name,
+      ),
+      array(
+        array('data' => t('Backtrace'), 'header' => TRUE),
+        nl2br($dblog->backtrace),
       ),
     );
     $attributes = array('class' => 'dblog-event');

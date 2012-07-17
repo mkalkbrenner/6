@@ -417,6 +417,8 @@ function search_invoke_preprocess(&$text) {
  * @ingroup search
  */
 function search_index($sid, $type, $text) {
+  global $db_type;
+
   $minimum_word_size = variable_get('minimum_word_size', 3);
 
   // Link matching
@@ -571,12 +573,18 @@ function search_index($sid, $type, $text) {
 
   // Insert results into search index
   foreach ($results[0] as $word => $score) {
-    // Try inserting first because this will succeed most times, but because
-    // the database collates similar words (accented and non-accented), the
-    // insert can fail, in which case we need to add the word scores together.
-    @db_query("INSERT INTO {search_index} (word, sid, type, score) VALUES ('%s', %d, '%s', %f)", $word, $sid, $type, $score);
-    if (!db_affected_rows()) {
-      db_query("UPDATE {search_index} SET score = score + %f WHERE word = '%s' AND sid = %d AND type = '%s'", $score, $word, $sid, $type);
+    if (strpos($db_type, 'mysql') === 0) {
+      db_query("INSERT INTO {search_index} (word, sid, type, score) VALUES ('%s', %d, '%s', %f) ON DUPLICATE KEY UPDATE score = score + %f",
+        $word, $sid, $type, $score, $score);
+    }
+    else {
+      // Try inserting first because this will succeed most times, but because
+      // the database collates similar words (accented and non-accented), the
+      // insert can fail, in which case we need to add the word scores together.
+      @db_query("INSERT INTO {search_index} (word, sid, type, score) VALUES ('%s', %d, '%s', %f)", $word, $sid, $type, $score);
+      if (!db_affected_rows()) {
+        db_query("UPDATE {search_index} SET score = score + %f WHERE word = '%s' AND sid = %d AND type = '%s'", $score, $word, $sid, $type);
+      }
     }
     search_dirty($word);
   }

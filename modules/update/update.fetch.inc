@@ -45,7 +45,7 @@ function _update_refresh() {
   // to clear out the stale data at this point.
   _update_cache_clear('update_available_releases');
   $max_fetch_attempts = variable_get('update_max_fetch_attempts', UPDATE_MAX_FETCH_ATTEMPTS);
-  
+
   foreach ($projects as $key => $project) {
     $url = _update_build_fetch_url($project, $site_key);
     $fetch_url_base = _update_get_fetch_url_base($project);
@@ -265,7 +265,9 @@ class update_xml_parser {
         $this->current_object = &$this->current_release;
         break;
       default:
-        $this->current_object[strtolower($this->current_tag)] = trim($this->current_object[strtolower($this->current_tag)]);
+        if (!empty($this->current_tag)) {
+          $this->current_object[strtolower($this->current_tag)] = trim($this->current_object[strtolower($this->current_tag)]);
+        }
         $this->current_tag = '';
     }
   }

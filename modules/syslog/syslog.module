@@ -102,6 +102,8 @@ function theme_syslog_format($entry) {
   global $base_url;
 
   $message  = $base_url;
+  $message .= '|'. $entry['server_addr'];
+  $message .= '|'. $entry['server_name'];
   $message .= '|'. $entry['timestamp'];
   $message .= '|'. $entry['type'];
   $message .= '|'. $entry['ip'];
@@ -111,5 +113,8 @@ function theme_syslog_format($entry) {
   $message .= '|'. strip_tags($entry['link']);
   $message .= '|'. strip_tags(is_null($entry['variables']) ? $entry['message'] : strtr($entry['message'], $entry['variables']));
 
+  if (!empty($entry['backtrace'])) {
+    $message .= '|'. implode(', ', $entry['backtrace']);
+  }
   return $message;
 }

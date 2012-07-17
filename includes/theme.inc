@@ -606,7 +606,7 @@ function list_themes($refresh = FALSE) {
  *   implementations for named objects.
  * @param ...
  *   Additional arguments to pass along to the theme function.
- * 
+ *
  * @return
  *   An HTML string that generates the themed output.
  */
@@ -1279,7 +1279,7 @@ function theme_links($links, $attributes = array('class' => 'links')) {
  * @param $getsize
  *   If set to TRUE, the image's dimension are fetched and added as width/height attributes.
  *   Defaults to TRUE. Must be set to FALSE if $path is a full URL.
- * 
+ *
  * @return
  *   A string containing the image tag.
  */
@@ -1870,10 +1870,10 @@ function template_preprocess_page(&$variables) {
 
   // Construct page title
   if (drupal_get_title()) {
-    $head_title = array(strip_tags(drupal_get_title()), variable_get('site_name', 'Pressflow'));
+    $head_title = array(strip_tags(drupal_get_title()), variable_get('site_name', 'Modified D6'));
   }
   else {
-    $head_title = array(variable_get('site_name', 'Pressflow'));
+    $head_title = array(variable_get('site_name', 'Modified D6'));
     if (variable_get('site_slogan', '')) {
       $head_title[] = variable_get('site_slogan', '');
     }
@@ -1894,7 +1894,7 @@ function template_preprocess_page(&$variables) {
   $variables['primary_links']     = theme_get_setting('toggle_primary_links') ? menu_primary_links() : array();
   $variables['secondary_links']   = theme_get_setting('toggle_secondary_links') ? menu_secondary_links() : array();
   $variables['search_box']        = (theme_get_setting('toggle_search') ? drupal_get_form('search_theme_form') : '');
-  $variables['site_name']         = (theme_get_setting('toggle_name') ? filter_xss_admin(variable_get('site_name', 'Pressflow')) : '');
+  $variables['site_name']         = (theme_get_setting('toggle_name') ? filter_xss_admin(variable_get('site_name', 'Modified D6')) : '');
   $variables['site_slogan']       = (theme_get_setting('toggle_slogan') ? filter_xss_admin(variable_get('site_slogan', '')) : '');
   $variables['css']               = drupal_add_css();
   $variables['styles']            = drupal_get_css();

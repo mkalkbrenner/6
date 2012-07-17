@@ -1,0 +1,267 @@
+[        ] mkalkbrenner: started Modified D6 at github
+[        ] mkalkbrenner: cleaned up cdc code, removed outdated drupalcenter stuff and prepared pressflow upstream
+
+cdc-6.26.19, 2012-05-03
+-----------------------
+[        ] mkalkbrenner: merged Drupal 6.26
+                         http://drupal.org/node/1558054
+
+
+cdc-6.25.18, 2012-03-12
+-----------------------
+[        ] mkalkbrenner: merged Drupal 6.25
+                         http://drupal.org/node/1461656
+[        ] mkalkbrenner: merged Pressflow 6.25.108
+                         https://github.com/pressflow/6/zipball/pressflow-6.25.108
+[        ] mkalkbrenner: introduced variable 'error_handler_errno_filter' to configure error levels for drupal_error_handler()
+
+
+cdc-6.24.17, 2012-02-02
+-----------------------
+[        ] mkalkbrenner: merged Drupal 6.24
+                         http://drupal.org/node/1425094
+[        ] mkalkbrenner: improved performance of taxonomy_get_term_by_name() for MySQL
+
+
+cdc-6.22.16, 2012-01-04
+-----------------------
+[        ] alex matzies, carstenmueller: added script to make personal data anonymous (scripts folder)
+[        ] mkalkbrenner: Some distributions, e.g. Debian and Ubuntu do not ship with PHP defaults that triggers PHP garbage collection. Added optional gc settings to default.settings.php
+[        ] mkalkbrenner, carstenmueller: Fixed fatal error during Installation, function user_is_anonymous() is not available.
+
+
+cdc-6.22.15, 2011-12-09
+-----------------------
+[        ] mkalkbrenner: merged https://code.launchpad.net/~andrewberry/pressflow/529252-has-js-cookie/+merge/69900
+                         Set the has_js cookie for authenticated users. This allows the Batch API to use the JS version for authenticated users if they have JS enabled.
+[#365241] chuckdeal97, noahb: Add select event to autocomplete feature
+
+
+cdc-6.22.14, 2011-08-11
+-----------------------
+[        ] mkalkbrenner: merged Drupal 6.22
+                         http://drupal.org/node/1168950
+[        ] mkalkbrenner: checked Pressflow 6.22.102 => nothing to merge
+[        ] mkalkbrenner: detect HTTPS from $_SERVER['HTTP_X_FORWARDED_PROTO']
+[        ] mkalkbrenner: set X-Mailer to 'Drupal' instead of 'Cocomore Drupal'
+[        ] mkalkbrenner: fixed Return-path when sending mails
+
+
+cdc-6.21.13, 2011-05-26
+-----------------------
+[        ] mkalkbrenner: optional log backtrace to watchdog
+[        ] mkalkbrenner: configurable message truncation in dblog overview
+[        ] mkalkbrenner: don't cache pages if status is something like "404 Page Not Found" or "503 Service Unavailable"
+[        ] mkalkbrenner: merged Drupal 6.21
+                         http://drupal.org/node/1168908
+
+
+cdc-6.20.12, 2011-01-14
+-----------------------
+[#1021498] carstenmueller: Remove E_NOTICE in update.fetch.inc - added patch in #3 "update.fetch_.inc_fix_notice-D6.patch"
+
+
+cdc-6.20.11, 2011-01-13
+-----------------------
+[       ] mkalkbrenner: checked Pressflow 6.20.97:
+                        https://launchpad.net/pressflow/6.x/6.20.97
+                        => nothing to do
+[#589930] crea: Remove drupal_set_message() calls from file_check_directory()
+[#767104] mgriego, EugenMayer, mkalkbrenner: Updated taxonomy terms not visible later in the same page request
+[       ] mkalkbrenner: imported german translations provided by drupalcenter.de
+
+
+cdc-6.20.10, 2010-12-16
+-----------------------
+[#972528] mkalkbrenner: MySQL silently fails: Got a packet bigger than "max_allowed_packet" bytes
+[#991602] mbutcher: t(): Change the order of langcode and function_exists("locale") evaluation
+[       ] based on drupal-6.20: http://drupal.org/drupal-6.20
+[#1000042] mkalkbrenner: latest patch for image_get_info in 6.20 accesses an undefined variable
+
+
+cdc-6.19.9, 2010-10-28
+----------------------
+[#955512] mkalkbrenner: no errors about unknown schema when running drupal_write_record() for different database connections than default
+[       ] mkalkbrenner: merged Pressflow 6.19.96:
+                        https://launchpad.net/pressflow/6.x/6.19.96
+
+
+cdc-6.19.8, 2010-09-24
+----------------------
+[       ] mkalkbrenner: merged Pressflow 6.19.94:
+                        https://launchpad.net/pressflow/6.x/6.19.94
+
+
+cdc-6.19.7, 2010-09-08
+----------------------
+[       ] mkalkbrenner: fixed watchdog warnings when started by drupal.sh or drush
+[       ] mkalkbrenner: smart replicant switch forces transactions to be run on db master
+[       ] mkalkbrenner: smart replicant switch forces SELECT LAST_INSERT_ID() to be run on db master
+[#494462] Allow crawling of sites/default/files by search engines, don't disallow it in robots.txt
+[       ] mkalkbrenner: changed minor version numbering to be compatible to drush make
+
+
+cdc-6.19.0, 2010-08-12
+----------------------
+[       ] based on drupal-6.19: http://drupal.org/drupal-6.19
+[       ] mkalkbrenner: merged Pressflow 6.19.92:
+                        https://launchpad.net/pressflow/6.x/6.19.92
+
+
+cdc-6.17.2, 2010-08-09
+----------------------
+[       ] mkalkbrenner: use InnoDB as default engine for MySQL. If it's not available MySQL falls back to MyISAM.
+[       ] mkalkbrenner: merged Pressflow 6.17.90:
+                        https://launchpad.net/pressflow/6.x/6.17.90
+
+
+cdc-6.17.1, 2010-06-26
+----------------------
+[       ] mkalkbrenner: merged Pressflow 6.17.85:
+                        https://launchpad.net/pressflow/6.x/6.17.85
+
+
+cdc-6.17.0, 2010-06-21
+----------------------
+[       ] based on drupal-6.17: http://drupal.org/drupal-6.17
+[       ] mkalkbrenner: merged Pressflow 6.17.83:
+                        https://launchpad.net/pressflow/6.x/6.17.83
+[launchpad:596153] David Strauss: file_directory_strip() not found. see https://bugs.launchpad.net/pressflow/+bug/596153
+[       ] mkalkbrenner: upgraded integrated simpletest to 6.10
+
+
+cdc-6.16.6, 2010-05-11
+----------------------
+[launchpad:575754] mkalkbrenner: fixed page_cache_max_age. see https://bugs.launchpad.net/pressflow/+bug/575754/comments/4
+[       ] mkalkbrenner: If no cache_lifetime is set, pages are always CACHE_TEMPORARY. In this case it's more efficient to truncate the cache in cache_clear_all()
+[       ] mkalkbrenner: Added performance debug tools: Memory Threshold and Session Starter
+
+
+cdc-6.16.5, 2010-05-05
+----------------------
+[launchpad:547003] nivanov: wrong encoding of <, > and & in drupal_to_js(). see https://bugs.launchpad.net/pressflow/+bug/547003
+[launchpad:575754] mkalkbrenner: cache_lifetime. see https://bugs.launchpad.net/pressflow/+bug/575754
+
+
+cdc-6.16.4, 2010-03-10
+----------------------
+[       ] mkalkbrenner: optimized UPDATE / INSERT statements for mysql in cache.inc
+[       ] mkalkbrenner: introduced constant COCOMORE_DRUPAL_CORE
+
+
+cdc-6.16.3, 2010-03-05
+----------------------
+[       ] mkalkbrenner: fixed another bug in lazy cache write that caused too many database inserts
+[       ] mkalkbrenner: improved lazy cache write by using a shutdown function
+[       ] mkalkbrenner: made lazy cache write compatible to semaphores introduced in drupal 6.16
+[       ] mkalkbrenner: made smart replicant switch compatible to semaphores introduced in drupal 6.16
+[       ] mkalkbrenner: lazy cache write is now optional. it has to be activated in settings.php. see default.settings.php for an example
+[       ] mhuder: fixed some german translations
+
+
+cdc-6.16.2, 2010-03-04
+----------------------
+[#733054] mkalkbrenner: Logging searches to watchdog should be configurable
+[       ] mkalkbrenner: fixed a possible race condition of cache_clear_all and lazy cache write
+
+
+cdc-6.16.1, 2010-03-04
+----------------------
+[       ] mkalkbrenner: fixed critical bug in lazy cache write
+
+
+cdc-6.16.0, 2010-03-04
+----------------------
+[       ] mkalkbrenner: merged Pressflow 6.16.77:
+                        https://launchpad.net/pressflow/6.x/6.16.77
+[       ] mkalkbrenner: ported advanced caching from Cocomore Drupal Core 5:
+            - lazy cache write: store new cache entries temoraryly in memory and update database at the end of the page request
+                                to speed up requests and avoid database replication issues if a cache entry get written and read afterwards during the same request
+            - avoid cache garbage collection during normal page request (optional, turned on by default)
+            - don't deliver expired cache entries
+[       ] mkalkbrenner: optimized UPDATE / INSERT statements for mysql
+[       ] mkalkbrenner: db_set_active() switches global $db_type
+
+
+cdc-6.15.2, 2010-02-10
+----------------------
+[#671052] mkalkbrenner: Add Information about server to watchdog
+[       ] mkalkbrenner: merged Pressflow 6.15.73:
+                        https://launchpad.net/pressflow/6.x/6.15.73
+[#184864] mkalkbrenner: Added patch to avoid "Page not found" message when adding a new comment when running drupal on IIS:
+                        http://drupal.org/node/184864#comment-2559656
+
+
+cdc-6.15.1, 2009-12-28
+----------------------
+[       ] merged Pressflow 6.15.65:
+          https://launchpad.net/pressflow/6.x/6.15.65
+[       ] added a .htaccess file to sites/default/files as hotfix for a security issue which we reported to security@drupal.org
+
+
+cdc-6.15.0, 2009-12-17
+----------------------
+[       ] based on drupal-6.15:
+          http://drupal.org/node/661600
+
+
+cdc-6.14.4, 2009-12-08
+----------------------
+[       ] fixed some translations for installation process
+[       ] merged Pressflow 6.14.64:
+          https://launchpad.net/pressflow/6.x/6.14.64
+[#32862]  applied patch to fix bug in ie6 autocomplete selection
+          http://drupal.org/node/32862#comment-2278704
+[       ] fixed project status url in theme info files
+
+
+cdc-6.14.3, 2009-10-27
+----------------------
+[#245990] applied patch to prevent HTTP request status failure
+          http://drupal.org/node/245990#comment-2197162
+
+
+cdc-6.14.2, 2009-10-23
+----------------------
+[       ] ported cocomore's smart replicant switching from cdc 5.x to 6.x
+[       ] integrated cocomore's smart replicant switching with Pressflow's database replication
+[       ] disallowed more text files in robots.txt
+
+
+cdc-6.14.1, 2009-10-15
+----------------------
+[       ] merged Pressflow 6.14.56:
+          https://launchpad.net/pressflow/6.x/6.14.56
+[       ] set DRUPAL_MINIMUM_PHP to '5.2.0' according to Pressflow's requirements
+
+
+drupal-6.14.0-cocomore-3, 2009-10-05
+------------------------------------
+[       ] fixed VERSION string
+
+
+drupal-6.14.0-cocomore-2, 2009-10-02
+------------------------------------
+[       ] updated german localization from drupalcenter.de
+
+
+drupal-6.14.0-cocomore-1, 2009-09-17
+------------------------------------
+[       ] based on drupal-6.14:
+          http://drupal.org/node/579476
+
+
+drupal-6.13.0-cocomore-1, 2009-08-07
+------------------------------------
+[       ] based on drupal-6.13:
+          http://drupal.org/node/507568
+[#229411] added patch: node_view() incompatible to php5
+          http://drupal.org/node/229411#comment-1654916
+[#298768] added patch: Ensure that entries are written to watchdog table
+          http://drupal.org/node/298768
+[#298678] added patch: Impossible to lock two MySQL tables
+          http://drupal.org/node/298678#comment-975533
+[#338630] added patch: Locale is unable to rebuild lost Javascript translation files
+          http://drupal.org/node/338630#comment-1307862
+[#287063] added patch: node_delete memory leak
+          http://drupal.org/node/287063#comment-1349186

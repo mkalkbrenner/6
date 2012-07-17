@@ -47,7 +47,7 @@ function taxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
 
         case 'feed':
           $channel['link'] = url('taxonomy/term/'. $str_tids .'/'. $depth, array('absolute' => TRUE));
-          $channel['title'] = variable_get('site_name', 'Pressflow') .' - '. $title;
+          $channel['title'] = variable_get('site_name', 'Modified D6') .' - '. $title;
           // Only display the description if we have a single term, to avoid clutter and confusion.
           if (count($tids) == 1) {
             $term = taxonomy_get_term($tids[0]);
@@ -56,7 +56,7 @@ function taxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
           }
 
           $result = taxonomy_select_nodes($tids, $terms['operator'], $depth, FALSE);
-          $items = array(); 
+          $items = array();
           while ($row = db_fetch_object($result)) {
             $items[] = $row->nid;
           }

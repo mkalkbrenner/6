@@ -18,7 +18,7 @@ function system_main_admin_page($arg = NULL) {
 
   // Check for status report errors.
   if (system_status(TRUE) && user_access('administer site configuration')) {
-    drupal_set_message(t('One or more problems were detected with your Pressflow installation. Check the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))), 'error');
+    drupal_set_message(t('One or more problems were detected with your Drupal installation. Check the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))), 'error');
   }
   $blocks = array();
   if ($admin = db_fetch_array(db_query("SELECT menu_name, mlid FROM {menu_links} WHERE link_path = 'admin' AND module = 'system'"))) {
@@ -1155,7 +1155,7 @@ function system_site_information_settings() {
   $form['site_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Name'),
-    '#default_value' => variable_get('site_name', 'Pressflow'),
+    '#default_value' => variable_get('site_name', 'Modified D6'),
     '#description' => t('The name of this website.'),
     '#required' => TRUE
   );
@@ -1257,6 +1257,14 @@ function system_error_reporting_settings() {
     '#description' => t('Specify where Drupal, PHP and SQL errors are logged. While it is recommended that a site running in a production environment write errors to the log only, in a development or testing environment it may be helpful to write errors both to the log and to the screen.')
   );
 
+  $watchdog_severity_levels[-1] = t('no backtrace');
+  $watchdog_severity_levels += watchdog_severity_levels();
+  $form['watchdog_log_backtrace'] = array(
+    '#type' => 'select', '#title' => t('Write backtrace to the log'), '#default_value' => variable_get('watchdog_log_backtrace', -1),
+    '#options' => $watchdog_severity_levels,
+    '#description' => t('Specify if a backtrace should be added to the log, when a givve error level is reached.'),
+  );
+
   return system_settings_form($form);
 }
 
@@ -1280,7 +1288,7 @@ function system_logging_overview() {
  */
 function system_performance_settings() {
 
-  $description = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Pressflow to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
+  $description = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Drupal to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
 
   $problem_modules = array_unique(array_merge(module_implements('boot'), module_implements('exit')));
   sort($problem_modules);
@@ -1294,7 +1302,7 @@ function system_performance_settings() {
   $form['page_cache'] = array(
     '#type' => 'fieldset',
     '#title' => t('Page cache'),
-    '#description' => t('Enabling the page cache will offer a significant performance boost. Pressflow can store and send compressed cached pages requested by <em>anonymous</em> users. By caching a web page, Pressflow does not have to construct the page each time it is viewed.'),
+    '#description' => t('Enabling the page cache will offer a significant performance boost. Drupal can store and send compressed cached pages requested by <em>anonymous</em> users. By caching a web page, Drupal does not have to construct the page each time it is viewed.'),
   );
 
   $form['page_cache']['cache'] = array(
@@ -1312,13 +1320,6 @@ function system_performance_settings() {
 
   $period = drupal_map_assoc(array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 86400), 'format_interval');
   $period[0] = '<'. t('none') .'>';
-  $form['page_cache']['cache_lifetime'] = array(
-    '#type' => 'select',
-    '#title' => t('Minimum cache lifetime'),
-    '#default_value' => variable_get('cache_lifetime', 0),
-    '#options' => $period,
-    '#description' => t('On high-traffic sites, it may be necessary to enforce a minimum cache lifetime. The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied and recreated, and is applied to both page and block caches. A larger minimum cache lifetime offers better performance, but users will not see new content for a longer period of time.')
-  );
   $form['page_cache']['page_cache_max_age'] = array(
     '#type' => 'select',
     '#title' => t('Page cache maximum age'),
@@ -1331,7 +1332,26 @@ function system_performance_settings() {
     '#title' => t('Page compression'),
     '#default_value' => variable_get('page_compression', TRUE),
     '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => t("By default, Pressflow compresses the pages it caches in order to save bandwidth and improve download times. This option should be disabled when using a webserver that performs compression."),
+    '#description' => t("By default, Drupal compresses the pages it caches in order to save bandwidth and improve download times. This option should be disabled when using a webserver that performs compression."),
+  );
+
+  $form['general_cache_lifetime'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General Cache Lifetime'),
+    '#description' => t('Enabling the block cache can offer a performance increase for all users by preventing blocks from being reconstructed on each page load. If the page cache is also enabled, performance increases from enabling the block cache will mainly benefit authenticated users.'),
+  );
+  $form['general_cache_lifetime']['cache_lifetime'] = array(
+    '#type' => 'select',
+    '#title' => t('Minimum cache lifetime'),
+    '#default_value' => variable_get('cache_lifetime', 0),
+    '#options' => $period,
+    '#description' => t('On high-traffic sites, it may be necessary to enforce a minimum cache lifetime. The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied and recreated, and is applied to both page and block caches. A larger minimum cache lifetime offers better performance, but users will not see new content for a longer period of time.')
+  );
+  $form['general_cache_lifetime']['cache_flush_cron'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Only cron flushes caches'),
+    '#default_value' => variable_get('cache_flush_cron', 1),
+    '#description' => t('If a minimum cache lifetime is set a kind of garbage collection cleans up the cache using this lifetime as interval. The check if the garbage collection should run happens on every page request that fetches something from the cache. If the garbage collection starts it might slow down this single request heavily. It\'s recommanded to turn this off and to leave this job to drupal\'s cron')
   );
 
   $form['block_cache'] = array(
@@ -1374,6 +1394,26 @@ function system_performance_settings() {
     '#description' => t('This option can interfere with module development and should only be enabled in a production environment.'),
   );
 
+  $form['performance_debug'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Debug'),
+    '#description' => t('Detect Performance issues on your site.'),
+  );
+
+  $form['performance_debug']['performance_debug_memory_threshold'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Memory Threshold (MB)'),
+    '#default_value' => variable_get('performance_debug_memory_threshold', 0),
+    '#description' => t('Log details about requests that exceed this memory threshold. "0" turns off logging.'),
+  );
+
+  $form['performance_debug']['performance_debug_session_starter'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log Session Starter'),
+    '#default_value' => variable_get('performance_debug_session_starter', 0),
+    '#description' => t('Log details about requests that start a session for anonymous users.'),
+  );
+
   $form['clear_cache'] = array(
     '#type' => 'fieldset',
     '#title' => t('Clear cached data'),
@@ -1391,6 +1431,21 @@ function system_performance_settings() {
 
   return system_settings_form($form);
 }
+
+
+/**
+ * Validate callback;
+ *
+ * @see system_performance_settings()
+ *
+ * @ingroup forms
+ */
+function system_performance_settings_validate($form, &$form_state) {
+  if (!ctype_digit($form_state['values']['performance_debug_memory_threshold'])) {
+    form_set_error('performance_debug_memory_threshold', t('Memory threshold needs to be numeric.'));
+  }
+}
+
 
 /**
  * Submit callback; clear system caches.
@@ -1681,7 +1736,7 @@ function system_site_maintenance_settings() {
   $form['site_offline_message'] = array(
     '#type' => 'textarea',
     '#title' => t('Site off-line message'),
-    '#default_value' => variable_get('site_offline_message', t('@site is currently under maintenance. We should be back shortly. Thank you for your patience.', array('@site' => variable_get('site_name', 'Pressflow')))),
+    '#default_value' => variable_get('site_offline_message', t('@site is currently under maintenance. We should be back shortly. Thank you for your patience.', array('@site' => variable_get('site_name', 'Modified D6')))),
     '#description' => t('Message to show visitors when the site is in off-line mode.')
   );
 
