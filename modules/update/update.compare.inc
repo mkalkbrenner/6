@@ -304,6 +304,10 @@ function update_calculate_project_data($available) {
   update_process_project_info($projects);
   foreach ($projects as $project => $project_info) {
     if (isset($available[$project])) {
+      $existing_version = $projects[$project]['existing_version'];
+      if ('drupal' == $project) {
+        $existing_version = preg_replace('/\.\d+$/', '', $existing_version);
+      }
 
       // If the project status is marked as something bad, there's nothing
       // else to consider.
@@ -416,7 +420,7 @@ function update_calculate_project_data($available) {
       }
       foreach ($available[$project]['releases'] as $version => $release) {
         // First, if this is the existing release, check a few conditions.
-        if ($projects[$project]['existing_version'] === $version) {
+        if ($existing_version === $version) {
           if (isset($release['terms']['Release type']) &&
               in_array('Insecure', $release['terms']['Release type'])) {
             $projects[$project]['status'] = UPDATE_NOT_SECURE;
@@ -505,7 +509,7 @@ function update_calculate_project_data($available) {
         }
 
         // Stop searching once we hit the currently installed version.
-        if ($projects[$project]['existing_version'] === $version) {
+        if ($existing_version === $version) {
           break;
         }
 
@@ -580,7 +584,7 @@ function update_calculate_project_data($available) {
       // Figure out the status, based on what we've seen and the install type.
       switch ($projects[$project]['install_type']) {
         case 'official':
-          if ($projects[$project]['existing_version'] === $projects[$project]['recommended'] || $projects[$project]['existing_version'] === $projects[$project]['latest_version']) {
+          if ($existing_version === $projects[$project]['recommended'] || $existing_version === $projects[$project]['latest_version']) {
             $projects[$project]['status'] = UPDATE_CURRENT;
           }
           else {
