@@ -1,3 +1,8 @@
+md6-6.29.24, 2013-11-21
+-----------------------
+[        ] mkalkbrenner: merged Drupal 6.29
+
+
 md6-6.28.23, 2013-01-17
 -----------------------
 [        ] mkalkbrenner: merged Drupal 6.28
