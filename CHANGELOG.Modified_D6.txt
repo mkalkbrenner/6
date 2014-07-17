@@ -1,3 +1,9 @@
+md6-6.32.28, 2014-07-17
+-----------------------
+[        ] mkalkbrenner: merged drupal-6.32
+[        ] mkalkbrenner: fixed api of function page_get_cache()
+
+
 md6-6.31.27, 2014-04-21
 -----------------------
 [        ] mkalkbrenner: merged pressflow-6.31.114

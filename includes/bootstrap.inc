@@ -377,7 +377,14 @@ function drupal_unset_globals() {
  *  TRUE if only containing valid characters, or FALSE otherwise.
  */
 function drupal_valid_http_host($host) {
-  return preg_match('/^\[?(?:[a-z0-9-:\]_]+\.?)+$/', $host);
+  // Limit the length of the host name to 1000 bytes to prevent DoS attacks with
+  // long host names.
+  return strlen($host) <= 1000
+    // Limit the number of subdomains and port separators to prevent DoS attacks
+    // in conf_path().
+    && substr_count($host, '.') <= 100
+    && substr_count($host, ':') <= 100
+    && preg_match('/^\[?(?:[a-zA-Z0-9-:\]_]+\.?)+$/', $host);
 }
 
 /**
@@ -721,11 +728,20 @@ function variable_cache_rebuild() {
  * from a form submission, the contents of a shopping cart, or other user-
  * specific content that should not be cached and displayed to other users.
  *
+ * @param $status_only
+ *   When set to TRUE, retrieve the status of the page cache only
+ *   (whether it was started in this request or not).
+
  * @return
  *   The cache object, if the page was found in the cache.
  */
-function page_get_cache() {
+function page_get_cache($status_only = FALSE) {
   global $user, $base_root;
+
+  if ($status_only) {
+    return page_get_cache_status();
+  }
+  $cache = NULL;
 
   if (drupal_page_is_cacheable()) {
     $cache = cache_get($base_root . request_uri(), 'cache_page');
@@ -734,11 +750,19 @@ function page_get_cache() {
     if (isset($cache->headers)) {
       $cache->headers = unserialize($cache->headers);
     }
-
-    if ($cache) {
-      return $cache;
-    }
   }
+
+  return $cache;
+}
+
+function page_get_cache_status($set_status = FALSE) {
+  static $status = FALSE;
+
+  if ($set_status) {
+    $status = TRUE;
+  }
+
+  return $status;
 }
 
 function drupal_page_is_cacheable($force = NULL) {
@@ -1580,6 +1604,7 @@ function _drupal_bootstrap($phase) {
 
       // Prepare for non-cached page workflow.
       if (!drupal_is_cli()) {
+        page_get_cache_status(TRUE);
         ob_start();
         drupal_page_header();
       }

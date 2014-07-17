@@ -297,17 +297,18 @@ function drupal_get_destination() {
  * @param $fragment
  *   (optional) A destination fragment identifier (named anchor).
  * @param $http_response_code
- *   (optional) The HTTP status code to use for the redirection, defaults to
- *   302. Valid values for an actual "goto" as per RFC 2616 section 10.3 are:
- *   - 301 Moved Permanently (the recommended value for most redirects)
- *   - 302 Found (default in Drupal and PHP, sometimes used for spamming search
- *         engines)
- *   - 303 See Other
- *   - 304 Not Modified
- *   - 305 Use Proxy
- *   - 307 Temporary Redirect (alternative to "503 Site Down for Maintenance")
- *   Note: Other values are defined by RFC 2616, but are rarely used and poorly
- *   supported.
+ *   (optional) The HTTP status code to use for the redirection, defaults to 302.
+ *   The valid values for 3xx redirection status codes are defined in
+ *   @link http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3 RFC 2616 @endlink
+ *   and the
+ *   @link http://tools.ietf.org/html/draft-reschke-http-status-308-07 draft for the new HTTP status codes: @endlink
+ *   - 301: Moved Permanently (the recommended value for most redirects).
+ *   - 302: Found (default in Drupal and PHP, sometimes used for spamming search
+ *     engines).
+ *   - 303: See Other.
+ *   - 304: Not Modified.
+ *   - 305: Use Proxy.
+ *   - 307: Temporary Redirect.
  * @see drupal_get_destination()
  */
 function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response_code = 302) {
@@ -642,10 +643,9 @@ function drupal_error_handler($errno, $message, $filename, $line, $context) {
     return;
   }
 
-  // drupal core uses E_ALL ^ E_DEPRECATED ^ E_NOTICE
-  // pressflow uses E_ALL ^ E_DEPRECATED
+  // drupal core and pressflow use E_ALL ^ E_DEPRECATED
   // modified d6 uses drupal core's filter as default but offers a variable to configure the filter
-  if ($errno & variable_get('error_handler_errno_filter', E_ALL ^ E_DEPRECATED ^ E_NOTICE)) {
+  if ($errno & variable_get('error_handler_errno_filter', E_ALL ^ E_DEPRECATED)) {
     $types = array(1 => 'error', 2 => 'warning', 4 => 'parse error', 8 => 'notice', 16 => 'core error', 32 => 'core warning', 64 => 'compile error', 128 => 'compile warning', 256 => 'user error', 512 => 'user warning', 1024 => 'user notice', 2048 => 'strict warning', 4096 => 'recoverable fatal error');
 
     // For database errors, we want the line number/file name of the place that
@@ -971,7 +971,7 @@ function t($string, $args = array(), $langcode = NULL) {
 /**
  * Verifies the syntax of the given e-mail address.
  *
- * See RFC 2822 for details.
+ * See @link http://tools.ietf.org/html/rfc5322 RFC 5322 @endlink for details.
  *
  * @param $mail
  *   A string containing an e-mail address.
