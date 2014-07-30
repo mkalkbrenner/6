@@ -1,3 +1,8 @@
+md6-6.32.xx, xxxx-xx-xx
+-----------------------
+[        ] hchonov: updated simpletest to 2.11
+
+
 md6-6.32.28, 2014-07-17
 -----------------------
 [        ] mkalkbrenner: merged drupal-6.32
