@@ -1,6 +1,6 @@
-md6-6.32.xx, xxxx-xx-xx
+md6-6.32.xx, 2014-xx-xx
 -----------------------
-[        ] hchonov: updated simpletest to 2.11
+[        ] mkalkbrenner: updated simpletest to 6.x-2.x-dev (2013-Oct-01)
 
 
 md6-6.32.28, 2014-07-17
