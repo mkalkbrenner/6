@@ -668,13 +668,13 @@ class DrupalUnitTestCase extends DrupalTestCase {
     $this->originalPrefix = $GLOBALS['db_prefix'];
     $this->originalFileDirectory =  variable_get('file_directory_path', conf_path() . '/files');
 
-    // Generate temporary prefixed database to ensure that tests have a clean starting point.
-    $this->databasePrefix = 'simpletest' . mt_rand(1000, 1000000);
-
     // Create test directory.
     $public_files_directory = $this->originalFileDirectory . '/simpletest/' . substr($this->databasePrefix, 10);
     file_check_directory($public_files_directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
     $conf['file_directory_path'] = $public_files_directory;
+
+    // Generate temporary prefixed database to ensure that tests have a clean starting point.
+    $this->databasePrefix = 'simpletest' . mt_rand(1000, 1000000);
 
     // Clone the current connection and replace the current prefix.
     $GLOBALS['db_prefix'] = is_array($GLOBALS['db_prefix']) ? $GLOBALS['db_prefix']['default'] : $GLOBALS['db_prefix'] . $this->databasePrefix;
@@ -1226,9 +1226,6 @@ class DrupalWebTestCase extends DrupalTestCase {
     // environment. (Drupal 6)
     $this->pass(t('Starting run with db_prefix %prefix', array('%prefix' => $db_prefix_new)), 'System');
 
-    // Clone the current connection and replace the current prefix.
-    $GLOBALS['db_prefix'] = $db_prefix_new;
-
     // Create test directory ahead of installation so fatal errors and debug
     // information can be logged during installation process.
     // Use temporary files directory with the same prefix as the database.
@@ -1239,6 +1236,9 @@ class DrupalWebTestCase extends DrupalTestCase {
     file_check_directory($public_files_directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
     file_check_directory($temp_files_directory, FILE_CREATE_DIRECTORY);
     $this->generatedTestFiles = FALSE;
+
+    // Clone the current connection and replace the current prefix.
+    $GLOBALS['db_prefix'] = $db_prefix_new;
 
     // Log fatal errors.
     ini_set('log_errors', 1);
