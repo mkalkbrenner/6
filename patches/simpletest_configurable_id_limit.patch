@@ -1,0 +1,22 @@
+diff --git a/modules/simpletest/drupal_web_test_case.php b/modules/simpletest/drupal_web_test_case.php
+index 0086522..64a16fa 100644
+--- a/modules/simpletest/drupal_web_test_case.php
++++ b/modules/simpletest/drupal_web_test_case.php
+@@ -674,7 +674,7 @@ class DrupalUnitTestCase extends DrupalTestCase {
+     $conf['file_directory_path'] = $public_files_directory;
+ 
+     // Generate temporary prefixed database to ensure that tests have a clean starting point.
+-    $this->databasePrefix = 'simpletest' . mt_rand(1000, 1000000);
++    $this->databasePrefix = 'simpletest' . mt_rand(variable_get('simpletest_id_min', 1000), variable_get('simpletest_id_max', 1000000));
+ 
+     // Clone the current connection and replace the current prefix.
+     $GLOBALS['db_prefix'] = is_array($GLOBALS['db_prefix']) ? $GLOBALS['db_prefix']['default'] : $GLOBALS['db_prefix'] . $this->databasePrefix;
+@@ -1204,7 +1204,7 @@ class DrupalWebTestCase extends DrupalTestCase {
+     global $user, $language, $conf;
+ 
+     // Generate a temporary prefixed database to ensure that tests have a clean starting point.
+-    $this->databasePrefix = 'simpletest' . mt_rand(1000, 1000000);
++    $this->databasePrefix = 'simpletest' . mt_rand(variable_get('simpletest_id_min', 1000), variable_get('simpletest_id_max', 1000000));
+     $db_prefix_new = is_array($GLOBALS['db_prefix']) ? $GLOBALS['db_prefix']['default'] : $GLOBALS['db_prefix'] . $this->databasePrefix;
+     db_query("UPDATE {simpletest_test_id} SET last_prefix = '%s' WHERE test_id = %d", $db_prefix_new, $this->testId);
+ 
