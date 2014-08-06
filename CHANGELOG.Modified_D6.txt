@@ -1,6 +1,11 @@
-md6-6.32.xx, 2014-xx-xx
+md6-6.33.29, 2014-08-06
 -----------------------
 [        ] mkalkbrenner: updated simpletest to 6.x-2.x-dev (2013-Oct-01)
+[        ] mkalkbrenner: simpletest: restore original conf on tear down
+[        ] mkalkbrenner: simpletest: introduced vars 'simpletest_id_min'  and 'simpletest_id_max'
+[        ] mkalkbrenner: simpletest: ensure watchdog entry on error in file_check_directory()
+[        ] mkalkbrenner: simpletest: fixed site_name test
+[        ] mkalkbrenner: merged drupal-6.33
 
 
 md6-6.32.28, 2014-07-17
