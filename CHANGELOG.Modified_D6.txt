@@ -1,3 +1,8 @@
+md6-6.xx.30, 2014-xx-xx
+-----------------------
+[        ] mkalkbrenner: backported d7 sites.php support
+
+
 md6-6.33.29, 2014-08-06
 -----------------------
 [        ] mkalkbrenner: updated simpletest to 6.x-2.x-dev (2013-Oct-01)
