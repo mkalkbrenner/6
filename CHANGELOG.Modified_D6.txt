@@ -1,6 +1,7 @@
-md6-6.xx.30, 2014-xx-xx
+md6-6.34.30, 2014-11-28
 -----------------------
 [        ] mkalkbrenner: backported d7 sites.php support
+[        ] mkalkbrenner: merged pressflow-6.34.117
 
 
 md6-6.33.29, 2014-08-06
