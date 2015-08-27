@@ -1,6 +1,7 @@
 md6-6.37.32, 2015-08-27
 -----------------------
 [        ] mkalkbrenner: merged pressflow-6.37.120
+[        ] mkalkbrenner: added cron_semaphore_timeout
 
 
 md6-6.36.31, 2015-06-18

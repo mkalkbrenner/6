@@ -2807,12 +2807,13 @@ function drupal_cron_run() {
 
   // Fetch the cron semaphore
   $semaphore = variable_get('cron_semaphore', FALSE);
+  $semaphore_timeout = variable_get('cron_semaphore_timeout', 3600);
 
   if ($semaphore) {
-    if (time() - $semaphore > 3600) {
+    if (time() - $semaphore > $semaphore_timeout) {
       // Either cron has been running for more than an hour or the semaphore
       // was not reset due to a database error.
-      watchdog('cron', 'Cron has been running for more than an hour and is most likely stuck.', array(), WATCHDOG_ERROR);
+      watchdog('cron', 'Cron has been running for longer than the configured timeout and is most likely stuck.', array(), WATCHDOG_ERROR);
 
       // Release cron semaphore
       variable_del('cron_semaphore');
