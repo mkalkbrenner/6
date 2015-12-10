@@ -59,11 +59,15 @@ function _unicode_check() {
   if (ini_get('mbstring.encoding_translation') != 0) {
     return array(UNICODE_ERROR, $t('Multibyte string input conversion in PHP is active and must be disabled. Check the php.ini <em>mbstring.encoding_translation</em> setting. Please refer to the <a href="@url">PHP mbstring documentation</a> for more information.', array('@url' => 'http://www.php.net/mbstring')));
   }
-  if (ini_get('mbstring.http_input') != 'pass') {
-    return array(UNICODE_ERROR, $t('Multibyte string input conversion in PHP is active and must be disabled. Check the php.ini <em>mbstring.http_input</em> setting. Please refer to the <a href="@url">PHP mbstring documentation</a> for more information.', array('@url' => 'http://www.php.net/mbstring')));
-  }
-  if (ini_get('mbstring.http_output') != 'pass') {
-    return array(UNICODE_ERROR, $t('Multibyte string output conversion in PHP is active and must be disabled. Check the php.ini <em>mbstring.http_output</em> setting. Please refer to the <a href="@url">PHP mbstring documentation</a> for more information.', array('@url' => 'http://www.php.net/mbstring')));
+  // mbstring.http_input and mbstring.http_output are deprecated and empty by
+  // default in PHP 5.6.
+  if (version_compare(PHP_VERSION, '5.6.0') == -1) {
+    if (ini_get('mbstring.http_input') != 'pass') {
+      return array(UNICODE_ERROR, $t('Multibyte string input conversion in PHP is active and must be disabled. Check the php.ini <em>mbstring.http_input</em> setting. Please refer to the <a href="@url">PHP mbstring documentation</a> for more information.', array('@url' => 'http://www.php.net/mbstring')));
+    }
+    if (ini_get('mbstring.http_output') != 'pass') {
+      return array(UNICODE_ERROR, $t('Multibyte string output conversion in PHP is active and must be disabled. Check the php.ini <em>mbstring.http_output</em> setting. Please refer to the <a href="@url">PHP mbstring documentation</a> for more information.', array('@url' => 'http://www.php.net/mbstring')));
+    }
   }
 
   // Set appropriate configuration
@@ -342,9 +346,9 @@ function decode_entities($text, $exclude = array()) {
   // Flip the exclude list so that we can do quick lookups later.
   $exclude = array_flip($exclude);
 
-  // Use a regexp to select all entities in one pass, to avoid decoding 
+  // Use a regexp to select all entities in one pass, to avoid decoding
   // double-escaped entities twice. The PREG_REPLACE_EVAL modifier 'e' is
-  // being used to allow for a callback (see 
+  // being used to allow for a callback (see
   // http://php.net/manual/en/reference.pcre.pattern.modifiers).
   return preg_replace('/&(#x?)?([A-Za-z0-9]+);/e', '_decode_entities("$1", "$2", "$0", $html_entities, $exclude)', $text);
 }
