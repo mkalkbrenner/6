@@ -323,14 +323,20 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
 
   if ($destination) {
     // Do not redirect to an absolute URL originating from user input.
-    $colonpos = strpos($destination, ':');
-    $absolute = strpos($destination, '//') === 0 || ($colonpos !== FALSE && !preg_match('![/?#]!', substr($destination, 0, $colonpos)));
-    if (!$absolute) {
-      extract(parse_url(urldecode($destination)));
+    if (!menu_path_is_external($destination)) {
+      extract(parse_url($destination));
     }
   }
 
-  $url = url($path, array('query' => $query, 'fragment' => $fragment, 'absolute' => TRUE));
+  $options = array('query' => $query, 'fragment' => $fragment, 'absolute' => TRUE);
+  // In some cases modules call drupal_goto($_GET['q']). We need to ensure that
+  // such a redirect is not to an external URL.
+  if ($path === $_GET['q'] && menu_path_is_external($path)) {
+    // Force url() to generate a non-external URL.
+    $options['external'] = FALSE;
+  }
+
+  $url = url($path, $options);
   // Remove newlines from the URL to avoid header injection attacks.
   $url = str_replace(array("\n", "\r"), '', $url);
 
@@ -1459,20 +1465,9 @@ function url($path = NULL, $options = array()) {
     'alias' => FALSE,
     'prefix' => ''
   );
-  // A duplicate of the code from menu_path_is_external() to avoid needing
-  // another function call, since performance inside url() is critical.
+
   if (!isset($options['external'])) {
-    // Return an external link if $path contains an allowed absolute URL. Avoid
-    // calling filter_xss_bad_protocol() if there is any slash (/), hash (#) or
-    // question_mark (?) before the colon (:) occurrence - if any - as this
-    // would clearly mean it is not a URL. If the path starts with 2 slashes
-    // then it is always considered an external URL without an explicit protocol
-    // part.
-    $colonpos = strpos($path, ':');
-    $options['external'] = (strpos($path, '//') === 0)
-      || ($colonpos !== FALSE
-        && !preg_match('![/?#]!', substr($path, 0, $colonpos))
-        && filter_xss_bad_protocol($path, FALSE) == check_plain($path));
+    $options['external'] = menu_path_is_external($path);
   }
 
   // May need language dependent rewriting if language.inc is present.
